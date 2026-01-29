@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+python-dotenv
+sqlalchemy
+alembic
+databases[asyncpg]
+asyncpg 
+joblib
+numpy
+pandas
+scikit-learn
+pytest
+pytest-asyncio
