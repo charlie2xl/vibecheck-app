@@ -1,38 +1,32 @@
 """
 Database Population Script for VibeCheck Business
-Run this script to populate the database with sample businesses.
+Run this script ONLY after migrations have been applied.
 
 Usage:
-    python populate_db.py
+    python scripts/populate_db.py
 """
 
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, engine
-from app.models import Base, Business
+from app.database import SessionLocal
+from app.models import Business
 
 
 def populate_database():
     """
     Populate the database with sample businesses.
     """
-    # Create tables if they don't exist
-    Base.metadata.create_all(bind=engine)
-    
-    # Create database session
     db: Session = SessionLocal()
-    
+
     try:
-        # Check if businesses already exist
         existing_count = db.query(Business).count()
-        
+
         if existing_count > 0:
             print(f"Database already contains {existing_count} businesses.")
             user_input = input("Do you want to add more businesses anyway? (yes/no): ")
-            if user_input.lower() not in ['yes', 'y']:
+            if user_input.lower() not in ("yes", "y"):
                 print("Operation cancelled.")
                 return
-        
-        # Sample businesses data
+
         sample_businesses = [
             {
                 "name": "Cosmic Coffee Roasters",
@@ -105,40 +99,33 @@ def populate_database():
                 "location": "691 Harmony Avenue, Nashville, TN 37201",
             },
         ]
-        
-        # Create business instances
-        businesses_to_add = []
-        for business_data in sample_businesses:
-            business = Business(
-                name=business_data["name"],
-                category=business_data["category"],
-                location=business_data["location"],
+
+        businesses = [
+            Business(
+                name=b["name"],
+                category=b["category"],
+                location=b["location"],
                 aggregated_vibe_score=0.0,
-                total_reviews=0
+                total_reviews=0,
             )
-            businesses_to_add.append(business)
-        
-        # Add all businesses to database
-        db.add_all(businesses_to_add)
+            for b in sample_businesses
+        ]
+
+        db.add_all(businesses)
         db.commit()
-        
-        print(f"\n✓ Successfully added {len(businesses_to_add)} businesses to the database!")
-        print("\nSample businesses added:")
-        for idx, business in enumerate(businesses_to_add, 1):
-            print(f"{idx}. {business.name} ({business.category})")
-        
+
+        print(f"\n✓ Successfully added {len(businesses)} businesses.\n")
+
     except Exception as e:
-        print(f"\n✗ Error occurred: {str(e)}")
         db.rollback()
+        print(f"\n✗ Error occurred: {str(e)}")
     finally:
         db.close()
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("VibeCheck Business - Database Population Script")
+    print("VibeCheck Business — Database Population")
     print("=" * 60)
-    print()
     populate_database()
-    print()
     print("=" * 60)

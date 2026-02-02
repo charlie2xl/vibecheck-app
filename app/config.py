@@ -4,9 +4,6 @@ from pathlib import Path
 # Base directory path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Database configuration
-DATABASE_URL = f"sqlite:///{BASE_DIR}/vibecheck.db"
-
 # Security configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-key-in-production")
 HASH_ALGORITHM = "sha256"
