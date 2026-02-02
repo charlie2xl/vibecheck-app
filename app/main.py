@@ -1,24 +1,19 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import timedelta
 
-from app.database import get_db, initialize_database
+from app.database import get_db
 from app.models import User, Business, Review
 from app.schemas import (
     UserCreate, UserLogin, UserResponse, LoginResponse,
     BusinessResponse, ReviewCreate, ReviewResponse, MessageResponse
 )
-from app.auth import hash_password, verify_password
+from app.auth import hash_password, verify_password, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_HOURS
 from app.utils import analyze_review_sentiment, refresh_business_metrics
 
 # Create FastAPI application
 app = FastAPI(title="VibeCheck Business Platform", version="1.0.0")
-
-
-# Startup event handler
-@app.on_event("startup")
-def on_startup():
-    initialize_database()
 
 
 # Root route
@@ -81,8 +76,17 @@ def authenticate_user(login_info: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect username or password"
         )
     
+    # Create JWT token
+    access_token_expires = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    access_token = create_access_token(
+        data={"user_id": user_account.id, "username": user_account.username},
+        expires_delta=access_token_expires
+    )
+    
     return {
         "message": "Authentication successful",
+        "access_token": access_token,
+        "token_type": "bearer",
         "user": user_account
     }
 
@@ -113,7 +117,7 @@ def retrieve_business(business_id: int, db: Session = Depends(get_db)):
 def submit_review(
     business_id: int,
     review_info: ReviewCreate,
-    user_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Validate business existence
@@ -124,20 +128,12 @@ def submit_review(
             detail=f"Business with ID {business_id} does not exist"
         )
     
-    # Validate user existence
-    user_record = db.query(User).filter(User.id == user_id).first()
-    if not user_record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} does not exist"
-        )
-    
     # Analyze sentiment using DS Service
     sentiment_analysis = analyze_review_sentiment(review_info.content)
     
     # Create review record
     review_instance = Review(
-        user_id=user_id,
+        user_id=current_user.id,
         business_id=business_id,
         content=review_info.content,
         vibe_score=sentiment_analysis.get("vibe_score"),
