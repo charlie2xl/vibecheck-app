@@ -18,7 +18,7 @@ requests==2.31.0
 # Machine Learning
 numpy==2.4.1
 scikit-learn==1.8.0
-joblib==1.5.3a
+joblib==1.5.3
 
 torch==2.10.0
 transformers==5.0.0
